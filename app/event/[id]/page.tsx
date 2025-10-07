@@ -3,13 +3,14 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useParams } from 'next/navigation';
-import { supabase, Event, Profile, SocialPlatform } from '@/lib/supabase';
+import { supabase, Event, Profile, SocialPlatform, UserInterest } from '@/lib/supabase';
 import { LettuceVisualization } from '@/components/lettuce/LettuceVisualization';
 import { AttendeeOrbit } from '@/components/attendees/AttendeeOrbit';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Leaf, ArrowLeft, Copy, Users, ExternalLink, QrCode, Share2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Leaf, ArrowLeft, Copy, Users, ExternalLink, QrCode, Share2, Tag, Filter } from 'lucide-react';
 import { toast } from 'sonner';
 import { subscribeToEventAttendees, updatePresence, markOffline } from '@/lib/realtime';
 import { QRCodeSVG } from 'qrcode.react';
@@ -26,6 +27,9 @@ export default function EventPage() {
   const [attendeeSocials, setAttendeeSocials] = useState<SocialPlatform[]>([]);
   const [userSocials, setUserSocials] = useState<SocialPlatform[]>([]);
   const [qrModalOpen, setQrModalOpen] = useState(false);
+  const [attendeeInterests, setAttendeeInterests] = useState<Record<string, UserInterest[]>>({});
+  const [selectedInterestFilter, setSelectedInterestFilter] = useState<string | null>(null);
+  const [allEventInterests, setAllEventInterests] = useState<string[]>([]);
 
   const publicEventUrl = typeof window !== 'undefined' && event
     ? `${window.location.origin}/e/${event.party_code}`
@@ -92,8 +96,39 @@ export default function EventPage() {
         .filter((p: any) => p && p.id !== user?.id) || [];
 
       setAttendees(profilesList);
+
+      await loadAllInterests(profilesList);
     } catch (error) {
       console.error('Error loading attendees:', error);
+    }
+  };
+
+  const loadAllInterests = async (attendeeList: Profile[]) => {
+    try {
+      const allUserIds = [user!.id, ...attendeeList.map(a => a.id)];
+
+      const { data, error } = await supabase
+        .from('user_interests')
+        .select('*')
+        .in('user_id', allUserIds);
+
+      if (error) throw error;
+
+      const interestsByUser: Record<string, UserInterest[]> = {};
+      const uniqueInterests = new Set<string>();
+
+      data?.forEach((interest) => {
+        if (!interestsByUser[interest.user_id]) {
+          interestsByUser[interest.user_id] = [];
+        }
+        interestsByUser[interest.user_id].push(interest);
+        uniqueInterests.add(interest.interest);
+      });
+
+      setAttendeeInterests(interestsByUser);
+      setAllEventInterests(Array.from(uniqueInterests).sort());
+    } catch (error) {
+      console.error('Error loading interests:', error);
     }
   };
 
@@ -278,6 +313,45 @@ export default function EventPage() {
             </p>
           </div>
 
+          {allEventInterests.length > 0 && (
+            <Card className="mb-8">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Filter className="w-5 h-5" />
+                  Filter by Interest
+                </CardTitle>
+                <CardDescription>Find attendees with shared interests</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-2">
+                  <Badge
+                    variant={selectedInterestFilter === null ? "default" : "outline"}
+                    className="cursor-pointer px-3 py-1.5"
+                    onClick={() => setSelectedInterestFilter(null)}
+                  >
+                    All ({attendees.length})
+                  </Badge>
+                  {allEventInterests.map((interest) => {
+                    const count = attendees.filter(a =>
+                      attendeeInterests[a.id]?.some(i => i.interest === interest)
+                    ).length;
+                    return (
+                      <Badge
+                        key={interest}
+                        variant={selectedInterestFilter === interest ? "default" : "outline"}
+                        className="cursor-pointer px-3 py-1.5 flex items-center gap-1"
+                        onClick={() => setSelectedInterestFilter(interest)}
+                      >
+                        <Tag className="w-3 h-3" />
+                        {interest} ({count})
+                      </Badge>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <div className="grid md:grid-cols-2 gap-8 mb-12">
             <Card>
               <CardHeader>
@@ -304,20 +378,38 @@ export default function EventPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Attendees</CardTitle>
-                <CardDescription>Click to view profiles and connect</CardDescription>
+                <CardDescription>
+                  {selectedInterestFilter
+                    ? `Showing attendees interested in "${selectedInterestFilter}"`
+                    : 'Click to view profiles and connect'}
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                {attendees.length > 0 ? (
-                  <AttendeeOrbit attendees={attendees} onAttendeeClick={handleAttendeeClick} />
-                ) : (
-                  <div className="text-center py-20">
-                    <Users className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-                    <p className="text-muted-foreground">No other attendees yet</p>
-                    <p className="text-sm text-muted-foreground mt-2">
-                      Share the party code to invite others
-                    </p>
-                  </div>
-                )}
+                {(() => {
+                  const filteredAttendees = selectedInterestFilter
+                    ? attendees.filter(a =>
+                        attendeeInterests[a.id]?.some(i => i.interest === selectedInterestFilter)
+                      )
+                    : attendees;
+
+                  return filteredAttendees.length > 0 ? (
+                    <AttendeeOrbit attendees={filteredAttendees} onAttendeeClick={handleAttendeeClick} />
+                  ) : (
+                    <div className="text-center py-20">
+                      <Users className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+                      <p className="text-muted-foreground">
+                        {selectedInterestFilter
+                          ? `No attendees with interest "${selectedInterestFilter}"`
+                          : 'No other attendees yet'}
+                      </p>
+                      <p className="text-sm text-muted-foreground mt-2">
+                        {selectedInterestFilter
+                          ? 'Try selecting a different interest'
+                          : 'Share the party code to invite others'}
+                      </p>
+                    </div>
+                  );
+                })()}
               </CardContent>
             </Card>
           </div>
@@ -330,25 +422,51 @@ export default function EventPage() {
             <DialogTitle>{selectedAttendee?.display_name}</DialogTitle>
             <DialogDescription>{selectedAttendee?.email}</DialogDescription>
           </DialogHeader>
-          <div className="space-y-3">
+          <div className="space-y-4">
+            {selectedAttendee && attendeeInterests[selectedAttendee.id]?.length > 0 && (
+              <div>
+                <p className="text-sm font-medium mb-2">Interests:</p>
+                <div className="flex flex-wrap gap-2">
+                  {attendeeInterests[selectedAttendee.id].map((interest) => {
+                    const userHasInterest = attendeeInterests[user!.id]?.some(
+                      i => i.interest === interest.interest
+                    );
+                    return (
+                      <Badge
+                        key={interest.id}
+                        variant={userHasInterest ? "default" : "secondary"}
+                        className="text-xs px-2 py-1 flex items-center gap-1"
+                      >
+                        <Tag className="w-3 h-3" />
+                        {interest.interest}
+                        {userHasInterest && <span className="ml-1">✓</span>}
+                      </Badge>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {attendeeSocials.length > 0 ? (
-              <>
-                <p className="text-sm text-muted-foreground">Available socials:</p>
-                {attendeeSocials.map((social) => (
-                  <Button
-                    key={social.id}
-                    variant="outline"
-                    className="w-full justify-between"
-                    onClick={() => handleConnect(social)}
-                  >
-                    <span className="capitalize">{social.platform}</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-muted-foreground">@{social.username}</span>
-                      <ExternalLink className="w-4 h-4" />
-                    </div>
-                  </Button>
-                ))}
-              </>
+              <div>
+                <p className="text-sm font-medium mb-2">Available socials:</p>
+                <div className="space-y-2">
+                  {attendeeSocials.map((social) => (
+                    <Button
+                      key={social.id}
+                      variant="outline"
+                      className="w-full justify-between"
+                      onClick={() => handleConnect(social)}
+                    >
+                      <span className="capitalize">{social.platform}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">@{social.username}</span>
+                        <ExternalLink className="w-4 h-4" />
+                      </div>
+                    </Button>
+                  ))}
+                </div>
+              </div>
             ) : (
               <p className="text-center py-8 text-muted-foreground">
                 No socials shared at this event

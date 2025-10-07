@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { supabase, SocialPlatform } from '@/lib/supabase';
+import { supabase, SocialPlatform, UserInterest } from '@/lib/supabase';
 import { LettuceVisualization } from '@/components/lettuce/LettuceVisualization';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,7 +11,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Leaf, ArrowLeft, Plus, Trash2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Leaf, ArrowLeft, Plus, Trash2, Tag, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 const PLATFORMS = [
@@ -34,6 +35,10 @@ export default function Profile() {
   const [username, setUsername] = useState('');
   const [profileUrl, setProfileUrl] = useState('');
 
+  const [interests, setInterests] = useState<UserInterest[]>([]);
+  const [newInterest, setNewInterest] = useState('');
+  const [addingInterest, setAddingInterest] = useState(false);
+
   useEffect(() => {
     if (!loading && !user) {
       router.push('/');
@@ -42,6 +47,7 @@ export default function Profile() {
 
     if (user) {
       loadSocials();
+      loadInterests();
     }
   }, [user, loading]);
 
@@ -56,6 +62,72 @@ export default function Profile() {
       setSocials(data || []);
     } catch (error) {
       console.error('Error loading socials:', error);
+    }
+  };
+
+  const loadInterests = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('user_interests')
+        .select('*')
+        .eq('user_id', user!.id)
+        .order('interest', { ascending: true });
+
+      if (error) throw error;
+      setInterests(data || []);
+    } catch (error) {
+      console.error('Error loading interests:', error);
+    }
+  };
+
+  const handleAddInterest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !newInterest.trim()) return;
+
+    setAddingInterest(true);
+
+    try {
+      const { error } = await supabase
+        .from('user_interests')
+        .insert({
+          user_id: user.id,
+          interest: newInterest.trim().toLowerCase(),
+        });
+
+      if (error) {
+        if (error.code === '23505') {
+          toast.error('You already have this interest');
+        } else {
+          throw error;
+        }
+        return;
+      }
+
+      toast.success('Interest added!');
+      setNewInterest('');
+      loadInterests();
+    } catch (error: any) {
+      console.error('Error adding interest:', error);
+      toast.error(error.message || 'Failed to add interest');
+    } finally {
+      setAddingInterest(false);
+    }
+  };
+
+  const handleDeleteInterest = async (interestId: string) => {
+    try {
+      const { error } = await supabase
+        .from('user_interests')
+        .delete()
+        .eq('id', interestId);
+
+      if (error) throw error;
+
+      toast.success('Interest removed');
+      loadInterests();
+    } catch (error) {
+      console.error('Error deleting interest:', error);
+      toast.error('Failed to remove interest');
     }
   };
 
@@ -253,6 +325,56 @@ export default function Profile() {
                     Add Your First Social
                   </Button>
                 </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="mt-8">
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <div>
+                  <CardTitle>Your Interests</CardTitle>
+                  <CardDescription>Add interests to connect with like-minded people</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleAddInterest} className="flex gap-2 mb-4">
+                <Input
+                  placeholder="e.g., photography, hiking, coding"
+                  value={newInterest}
+                  onChange={(e) => setNewInterest(e.target.value)}
+                  disabled={addingInterest}
+                />
+                <Button type="submit" disabled={addingInterest || !newInterest.trim()}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add
+                </Button>
+              </form>
+
+              {interests.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {interests.map((interest) => (
+                    <Badge
+                      key={interest.id}
+                      variant="secondary"
+                      className="text-sm px-3 py-1.5 flex items-center gap-2"
+                    >
+                      <Tag className="w-3 h-3" />
+                      {interest.interest}
+                      <button
+                        onClick={() => handleDeleteInterest(interest.id)}
+                        className="ml-1 hover:text-destructive transition-colors"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-center py-8 text-muted-foreground">
+                  No interests added yet. Add some to help others find common ground!
+                </p>
               )}
             </CardContent>
           </Card>

@@ -47,3 +47,10 @@ export type EventAttendee = {
   is_online: boolean;
   last_seen: string;
 };
+
+export type UserInterest = {
+  id: string;
+  user_id: string;
+  interest: string;
+  created_at: string;
+};

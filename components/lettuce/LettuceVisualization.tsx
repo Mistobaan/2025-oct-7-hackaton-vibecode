@@ -125,6 +125,8 @@ export function LettuceVisualization({
 
         const Icon = platformIcons[social.platform as keyof typeof platformIcons];
 
+        const isBehindProfile = y > 0;
+
         if (showAsLeaves) {
           const leafRotation = (angle * 180) / Math.PI;
 
@@ -134,6 +136,7 @@ export function LettuceVisualization({
               className="absolute top-1/2 left-1/2 cursor-pointer"
               style={{
                 transformOrigin: 'center bottom',
+                zIndex: isBehindProfile ? 0 : 2,
               }}
               initial={{ scale: 0, opacity: 0 }}
               animate={{

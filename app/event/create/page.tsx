@@ -11,8 +11,32 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Leaf, ArrowLeft, Calendar, Clock } from 'lucide-react';
+import { Leaf, ArrowLeft, Calendar, Clock, Tag, Plus, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { Badge } from '@/components/ui/badge';
+
+const SUGGESTED_INTERESTS = [
+  'Photography',
+  'Hiking',
+  'Coding',
+  'Gaming',
+  'Music',
+  'Travel',
+  'Reading',
+  'Fitness',
+  'Art',
+  'Cooking',
+  'Design',
+  'Entrepreneurship',
+  'Investing',
+  'Writing',
+  'Yoga',
+  'Coffee',
+  'Movies',
+  'Sports',
+  'Tech',
+  'Fashion',
+];
 
 export default function CreateEvent() {
   const { user, loading } = useAuth();
@@ -25,6 +49,8 @@ export default function CreateEvent() {
   const [startTime, setStartTime] = useState('');
   const [endDate, setEndDate] = useState('');
   const [endTime, setEndTime] = useState('');
+  const [interests, setInterests] = useState<string[]>([]);
+  const [newInterest, setNewInterest] = useState('');
 
   const generatePartyCode = () => {
     return Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -35,6 +61,25 @@ export default function CreateEvent() {
     basic: 200,
     pro: 1000,
     enterprise: 999999,
+  };
+
+  const handleAddInterest = (e?: React.FormEvent, customInterest?: string) => {
+    e?.preventDefault();
+    const interestToAdd = customInterest || newInterest;
+    if (!interestToAdd.trim()) return;
+
+    const normalizedInterest = interestToAdd.trim().toLowerCase();
+    if (interests.includes(normalizedInterest)) {
+      toast.error('Interest already added');
+      return;
+    }
+
+    setInterests([...interests, normalizedInterest]);
+    setNewInterest('');
+  };
+
+  const handleRemoveInterest = (interest: string) => {
+    setInterests(interests.filter((i) => i !== interest));
   };
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -67,6 +112,7 @@ export default function CreateEvent() {
           end_time: endDateTime,
           max_attendees: tierLimits[tier],
           tier,
+          interests,
         })
         .select()
         .single();
@@ -151,6 +197,65 @@ export default function CreateEvent() {
                     onChange={(e) => setDescription(e.target.value)}
                     rows={3}
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>
+                    <Tag className="w-4 h-4 inline mr-2" />
+                    Event Interests (Optional)
+                  </Label>
+                  <form onSubmit={handleAddInterest} className="flex gap-2 mb-3">
+                    <Input
+                      placeholder="e.g., networking, tech, startups"
+                      value={newInterest}
+                      onChange={(e) => setNewInterest(e.target.value)}
+                    />
+                    <Button type="submit" size="sm" disabled={!newInterest.trim()}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add
+                    </Button>
+                  </form>
+
+                  <div className="mb-3">
+                    <p className="text-xs text-muted-foreground mb-2">Quick add:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {SUGGESTED_INTERESTS.filter(
+                        (suggested) => !interests.includes(suggested.toLowerCase())
+                      ).slice(0, 10).map((interest) => (
+                        <Badge
+                          key={interest}
+                          variant="outline"
+                          className="text-xs px-2 py-0.5 cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
+                          onClick={() => handleAddInterest(undefined, interest)}
+                        >
+                          <Plus className="w-3 h-3 mr-1" />
+                          {interest}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+
+                  {interests.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {interests.map((interest) => (
+                        <Badge
+                          key={interest}
+                          variant="secondary"
+                          className="text-sm px-3 py-1.5 flex items-center gap-2"
+                        >
+                          <Tag className="w-3 h-3" />
+                          {interest}
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveInterest(interest)}
+                            className="hover:text-destructive transition-colors"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-4">

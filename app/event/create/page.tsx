@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { LoadingLettuce } from '@/components/ui/loading-lettuce';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -94,7 +95,7 @@ export default function CreateEvent() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-pulse text-primary text-2xl">Loading...</div>
+        <LoadingLettuce size="lg" />
       </div>
     );
   }

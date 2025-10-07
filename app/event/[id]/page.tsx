@@ -6,6 +6,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { supabase, Event, Profile, SocialPlatform, UserInterest } from '@/lib/supabase';
 import { LettuceVisualization } from '@/components/lettuce/LettuceVisualization';
 import { AttendeeOrbit } from '@/components/attendees/AttendeeOrbit';
+import { LoadingLettuce } from '@/components/ui/loading-lettuce';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -239,7 +240,7 @@ export default function EventPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-pulse text-primary text-2xl">Loading...</div>
+        <LoadingLettuce size="lg" />
       </div>
     );
   }

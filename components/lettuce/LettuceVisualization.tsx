@@ -1,13 +1,17 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Linkedin, Instagram, Github, Youtube } from 'lucide-react';
+import { Linkedin, Instagram, Github, Youtube, User } from 'lucide-react';
 import { SocialPlatform } from '@/lib/supabase';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 type LettuceVisualizationProps = {
   socials: SocialPlatform[];
   onToggleSocial?: (socialId: string) => void;
   size?: 'small' | 'medium' | 'large';
+  profileImage?: string | null;
+  displayName?: string;
+  showAsLeaves?: boolean;
 };
 
 const platformIcons = {
@@ -36,10 +40,24 @@ const sizeMap = {
 export function LettuceVisualization({
   socials,
   onToggleSocial,
-  size = 'large'
+  size = 'large',
+  profileImage,
+  displayName,
+  showAsLeaves = false,
 }: LettuceVisualizationProps) {
   const sizes = sizeMap[size];
   const radius = size === 'small' ? 50 : size === 'medium' ? 70 : 100;
+
+  const centerContent = showAsLeaves ? (
+    <Avatar className="w-full h-full border-4 border-primary/40">
+      <AvatarImage src={profileImage || undefined} alt={displayName} />
+      <AvatarFallback className="bg-primary/20 text-primary text-2xl">
+        {displayName?.charAt(0).toUpperCase() || <User className="w-8 h-8" />}
+      </AvatarFallback>
+    </Avatar>
+  ) : (
+    <div className="text-primary text-4xl">🥬</div>
+  );
 
   return (
     <div className={`relative ${sizes.container} mx-auto`}>
@@ -57,17 +75,29 @@ export function LettuceVisualization({
       />
 
       <motion.div
-        className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 ${sizes.center} bg-primary/20 rounded-full flex items-center justify-center border-2 border-primary/40`}
-        animate={{
-          rotate: 360,
-        }}
-        transition={{
-          duration: 20,
-          repeat: Infinity,
-          ease: 'linear',
-        }}
+        className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 ${sizes.center} ${
+          showAsLeaves ? '' : 'bg-primary/20'
+        } rounded-full flex items-center justify-center ${
+          showAsLeaves ? '' : 'border-2 border-primary/40'
+        }`}
+        animate={
+          showAsLeaves
+            ? {}
+            : {
+                rotate: 360,
+              }
+        }
+        transition={
+          showAsLeaves
+            ? {}
+            : {
+                duration: 20,
+                repeat: Infinity,
+                ease: 'linear',
+              }
+        }
       >
-        <div className="text-primary text-4xl">🥬</div>
+        {centerContent}
       </motion.div>
 
       {socials.map((social, index) => {
@@ -76,6 +106,51 @@ export function LettuceVisualization({
         const y = Math.sin(angle) * radius;
 
         const Icon = platformIcons[social.platform as keyof typeof platformIcons];
+
+        if (showAsLeaves) {
+          return (
+            <motion.div
+              key={social.id}
+              className="absolute top-1/2 left-1/2"
+              style={{
+                x: x - 16,
+                y: y - 16,
+              }}
+              initial={{ scale: 0, opacity: 0, rotate: 0 }}
+              animate={{
+                scale: social.is_visible ? 1 : 0.5,
+                opacity: social.is_visible ? 1 : 0.4,
+                rotate: angle * (180 / Math.PI) + 90,
+              }}
+              transition={{
+                type: 'spring',
+                stiffness: 260,
+                damping: 20,
+                delay: index * 0.1,
+              }}
+            >
+              <motion.button
+                className={`${sizes.leaf} flex items-center justify-center transition-colors ${
+                  social.is_visible ? 'text-primary' : 'text-muted-foreground'
+                }`}
+                onClick={() => onToggleSocial?.(social.id)}
+                whileHover={{ scale: 1.2 }}
+                whileTap={{ scale: 0.9 }}
+                animate={{
+                  y: [0, -3, 0],
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  delay: index * 0.2,
+                  ease: 'easeInOut',
+                }}
+              >
+                <span className="text-3xl">🍃</span>
+              </motion.button>
+            </motion.div>
+          );
+        }
 
         return (
           <motion.div

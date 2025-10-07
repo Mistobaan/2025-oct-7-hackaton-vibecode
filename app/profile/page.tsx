@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { supabase, SocialPlatform, UserInterest } from '@/lib/supabase';
 import { LettuceVisualization } from '@/components/lettuce/LettuceVisualization';
+import { LoadingLettuce } from '@/components/ui/loading-lettuce';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,7 +13,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Leaf, ArrowLeft, Plus, Trash2, Tag, X } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Leaf, ArrowLeft, Plus, Trash2, Tag, X, Upload, User as UserIcon2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const PLATFORMS = [
@@ -38,6 +40,7 @@ export default function Profile() {
   const [interests, setInterests] = useState<UserInterest[]>([]);
   const [newInterest, setNewInterest] = useState('');
   const [addingInterest, setAddingInterest] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -131,6 +134,63 @@ export default function Profile() {
     }
   };
 
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Image must be less than 2MB');
+      return;
+    }
+
+    setUploadingImage(true);
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = async () => {
+        const base64 = reader.result as string;
+
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ avatar_url: base64 })
+          .eq('id', user.id);
+
+        if (updateError) throw updateError;
+
+        toast.success('Profile image updated!');
+        window.location.reload();
+      };
+    } catch (error: any) {
+      console.error('Error uploading avatar:', error);
+      toast.error(error.message || 'Failed to upload image');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleRemoveAvatar = async () => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ avatar_url: null })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      toast.success('Profile image removed');
+      window.location.reload();
+    } catch (error) {
+      console.error('Error removing avatar:', error);
+      toast.error('Failed to remove image');
+    }
+  };
+
   const handleAddSocial = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -205,7 +265,7 @@ export default function Profile() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-pulse text-primary text-2xl">Loading...</div>
+        <LoadingLettuce size="lg" />
       </div>
     );
   }
@@ -240,6 +300,45 @@ export default function Profile() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
+                  <Label>Profile Image</Label>
+                  <div className="flex items-center gap-4 mt-2">
+                    <Avatar className="w-20 h-20">
+                      <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.display_name} />
+                      <AvatarFallback className="text-2xl">
+                        {profile?.display_name?.charAt(0).toUpperCase() || <UserIcon2 className="w-8 h-8" />}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={uploadingImage}
+                        onClick={() => document.getElementById('avatar-upload')?.click()}
+                      >
+                        <Upload className="w-4 h-4 mr-2" />
+                        {uploadingImage ? 'Uploading...' : 'Upload'}
+                      </Button>
+                      <input
+                        id="avatar-upload"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleAvatarUpload}
+                      />
+                      {profile?.avatar_url && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={handleRemoveAvatar}
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Remove
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div>
                   <Label>Display Name</Label>
                   <p className="text-lg font-medium mt-1">{profile?.display_name || 'Not set'}</p>
                 </div>
@@ -261,10 +360,18 @@ export default function Profile() {
                     socials={socials}
                     onToggleSocial={handleToggleSocial}
                     size="medium"
+                    profileImage={profile?.avatar_url}
+                    displayName={profile?.display_name}
+                    showAsLeaves={true}
                   />
                 ) : (
                   <div className="text-center py-12">
-                    <div className="text-6xl mb-4">🥬</div>
+                    <Avatar className="w-24 h-24 mx-auto mb-4">
+                      <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.display_name} />
+                      <AvatarFallback className="text-4xl">
+                        {profile?.display_name?.charAt(0).toUpperCase() || <UserIcon2 className="w-12 h-12" />}
+                      </AvatarFallback>
+                    </Avatar>
                     <p className="text-muted-foreground">No socials yet</p>
                   </div>
                 )}

@@ -156,7 +156,7 @@ export function LettuceVisualization({
                 style={{
                   width: sizes.leafWidth,
                   height: sizes.leafHeight,
-                  transform: 'translate(-50%, -85%)',
+                  transform: 'translate(-50%, -50%)',
                 }}
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
@@ -190,7 +190,7 @@ export function LettuceVisualization({
                   </defs>
 
                   <path
-                    d="M 50 5 Q 30 20, 20 40 Q 10 60, 15 80 Q 20 100, 30 115 Q 40 130, 50 135 Q 60 130, 70 115 Q 80 100, 85 80 Q 90 60, 80 40 Q 70 20, 50 5 Z"
+                    d="M 50 135 Q 40 120, 30 105 Q 20 90, 15 70 Q 10 50, 20 30 Q 30 10, 50 5 Q 70 10, 80 30 Q 90 50, 85 70 Q 80 90, 70 105 Q 60 120, 50 135 Z"
                     fill={`url(#leaf-gradient-${social.id})`}
                     stroke="#16a34a"
                     strokeWidth="1.5"
@@ -198,7 +198,7 @@ export function LettuceVisualization({
                   />
 
                   <path
-                    d="M 50 20 Q 50 40, 50 60 M 50 40 Q 35 50, 25 60 M 50 40 Q 65 50, 75 60 M 50 60 Q 40 75, 35 90 M 50 60 Q 60 75, 65 90"
+                    d="M 50 120 Q 50 100, 50 80 M 50 100 Q 35 90, 25 80 M 50 100 Q 65 90, 75 80 M 50 80 Q 40 65, 35 50 M 50 80 Q 60 65, 65 50"
                     stroke="#16a34a"
                     strokeWidth="1"
                     fill="none"

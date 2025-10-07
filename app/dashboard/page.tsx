@@ -7,7 +7,7 @@ import { supabase, SocialPlatform, Event } from '@/lib/supabase';
 import { LettuceVisualization } from '@/components/lettuce/LettuceVisualization';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Leaf, Plus, LogOut, User as UserIcon, Calendar, Clock } from 'lucide-react';
+import { Leaf, Plus, LogOut, User as UserIcon, Calendar, Clock, Trash2 } from 'lucide-react';
 import { signOut } from '@/lib/auth';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -89,6 +89,29 @@ export default function Dashboard() {
       router.push('/');
     } catch (error) {
       toast.error('Failed to sign out');
+    }
+  };
+
+  const handleDeleteEvent = async (eventId: string, eventName: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+
+    if (!confirm(`Are you sure you want to delete "${eventName}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('events')
+        .delete()
+        .eq('id', eventId);
+
+      if (error) throw error;
+
+      setCreatedEvents(createdEvents.filter(event => event.id !== eventId));
+      toast.success('Event deleted successfully');
+    } catch (error) {
+      console.error('Error deleting event:', error);
+      toast.error('Failed to delete event');
     }
   };
 
@@ -230,9 +253,19 @@ export default function Dashboard() {
                           </code>
                         </div>
                       </div>
-                      <Button variant="ghost" size="sm">
-                        View
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="sm">
+                          View
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => handleDeleteEvent(event.id, event.name, e)}
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>

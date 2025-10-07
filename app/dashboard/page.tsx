@@ -7,15 +7,17 @@ import { supabase, SocialPlatform, Event } from '@/lib/supabase';
 import { LettuceVisualization } from '@/components/lettuce/LettuceVisualization';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Leaf, Plus, LogOut, User as UserIcon } from 'lucide-react';
+import { Leaf, Plus, LogOut, User as UserIcon, Calendar, Clock } from 'lucide-react';
 import { signOut } from '@/lib/auth';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
 
 export default function Dashboard() {
   const { user, profile, loading } = useAuth();
   const router = useRouter();
   const [socials, setSocials] = useState<SocialPlatform[]>([]);
   const [currentEvent, setCurrentEvent] = useState<Event | null>(null);
+  const [createdEvents, setCreatedEvents] = useState<Event[]>([]);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -26,6 +28,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (user) {
       loadSocials();
+      loadCreatedEvents();
     }
   }, [user]);
 
@@ -40,6 +43,21 @@ export default function Dashboard() {
       setSocials(data || []);
     } catch (error) {
       console.error('Error loading socials:', error);
+    }
+  };
+
+  const loadCreatedEvents = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('events')
+        .select('*')
+        .eq('created_by', user!.id)
+        .order('start_time', { ascending: false });
+
+      if (error) throw error;
+      setCreatedEvents(data || []);
+    } catch (error) {
+      console.error('Error loading created events:', error);
     }
   };
 
@@ -181,6 +199,46 @@ export default function Dashboard() {
               </CardContent>
             </Card>
           </div>
+
+          {createdEvents.length > 0 && (
+            <Card className="mb-12">
+              <CardHeader>
+                <CardTitle>Your Events</CardTitle>
+                <CardDescription>Events you've created</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {createdEvents.map((event) => (
+                    <div
+                      key={event.id}
+                      className="flex items-center justify-between p-4 rounded-lg border border-border hover:border-primary transition-colors cursor-pointer"
+                      onClick={() => router.push(`/event/${event.id}`)}
+                    >
+                      <div className="flex-1">
+                        <h3 className="font-semibold">{event.name}</h3>
+                        <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            {format(new Date(event.start_time), 'MMM d, yyyy')}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {format(new Date(event.start_time), 'h:mm a')}
+                          </span>
+                          <code className="px-2 py-0.5 bg-primary/10 rounded text-xs font-mono">
+                            {event.party_code}
+                          </code>
+                        </div>
+                      </div>
+                      <Button variant="ghost" size="sm">
+                        View
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           <Card>
             <CardHeader>

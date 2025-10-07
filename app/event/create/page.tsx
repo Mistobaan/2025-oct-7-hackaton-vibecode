@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Leaf, ArrowLeft } from 'lucide-react';
+import { Leaf, ArrowLeft, Calendar, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function CreateEvent() {
@@ -20,6 +20,10 @@ export default function CreateEvent() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [tier, setTier] = useState<'free' | 'basic' | 'pro' | 'enterprise'>('free');
+  const [startDate, setStartDate] = useState('');
+  const [startTime, setStartTime] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [endTime, setEndTime] = useState('');
 
   const generatePartyCode = () => {
     return Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -36,10 +40,20 @@ export default function CreateEvent() {
     e.preventDefault();
     if (!user) return;
 
+    if (!startDate || !startTime) {
+      toast.error('Please set a start date and time');
+      return;
+    }
+
     setCreating(true);
 
     try {
       const partyCode = generatePartyCode();
+
+      const startDateTime = new Date(`${startDate}T${startTime}`).toISOString();
+      const endDateTime = endDate && endTime
+        ? new Date(`${endDate}T${endTime}`).toISOString()
+        : null;
 
       const { data: event, error: eventError } = await supabase
         .from('events')
@@ -48,6 +62,8 @@ export default function CreateEvent() {
           name,
           description: description || null,
           party_code: partyCode,
+          start_time: startDateTime,
+          end_time: endDateTime,
           max_attendees: tierLimits[tier],
           tier,
         })
@@ -134,6 +150,62 @@ export default function CreateEvent() {
                     onChange={(e) => setDescription(e.target.value)}
                     rows={3}
                   />
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="startDate">
+                      <Calendar className="w-4 h-4 inline mr-2" />
+                      Start Date
+                    </Label>
+                    <Input
+                      id="startDate"
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="startTime">
+                      <Clock className="w-4 h-4 inline mr-2" />
+                      Start Time
+                    </Label>
+                    <Input
+                      id="startTime"
+                      type="time"
+                      value={startTime}
+                      onChange={(e) => setStartTime(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="endDate">
+                      <Calendar className="w-4 h-4 inline mr-2" />
+                      End Date (Optional)
+                    </Label>
+                    <Input
+                      id="endDate"
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="endTime">
+                      <Clock className="w-4 h-4 inline mr-2" />
+                      End Time (Optional)
+                    </Label>
+                    <Input
+                      id="endTime"
+                      type="time"
+                      value={endTime}
+                      onChange={(e) => setEndTime(e.target.value)}
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-4">

@@ -26,6 +26,29 @@ const PLATFORMS = [
   { value: 'youtube', label: 'YouTube' },
 ];
 
+const SUGGESTED_INTERESTS = [
+  'Photography',
+  'Hiking',
+  'Coding',
+  'Gaming',
+  'Music',
+  'Travel',
+  'Reading',
+  'Fitness',
+  'Art',
+  'Cooking',
+  'Design',
+  'Entrepreneurship',
+  'Investing',
+  'Writing',
+  'Yoga',
+  'Coffee',
+  'Movies',
+  'Sports',
+  'Tech',
+  'Fashion',
+];
+
 export default function Profile() {
   const { user, profile, loading } = useAuth();
   const router = useRouter();
@@ -83,9 +106,10 @@ export default function Profile() {
     }
   };
 
-  const handleAddInterest = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user || !newInterest.trim()) return;
+  const handleAddInterest = async (e?: React.FormEvent, customInterest?: string) => {
+    e?.preventDefault();
+    const interestToAdd = customInterest || newInterest;
+    if (!user || !interestToAdd.trim()) return;
 
     setAddingInterest(true);
 
@@ -94,7 +118,7 @@ export default function Profile() {
         .from('user_interests')
         .insert({
           user_id: user.id,
-          interest: newInterest.trim().toLowerCase(),
+          interest: interestToAdd.trim().toLowerCase(),
         });
 
       if (error) {
@@ -115,6 +139,10 @@ export default function Profile() {
     } finally {
       setAddingInterest(false);
     }
+  };
+
+  const handleQuickAddInterest = (interest: string) => {
+    handleAddInterest(undefined, interest);
   };
 
   const handleDeleteInterest = async (interestId: string) => {
@@ -459,28 +487,51 @@ export default function Profile() {
                 </Button>
               </form>
 
-              {interests.length > 0 ? (
+              <div className="mb-4">
+                <p className="text-sm text-muted-foreground mb-2">Quick add suggestions:</p>
                 <div className="flex flex-wrap gap-2">
-                  {interests.map((interest) => (
+                  {SUGGESTED_INTERESTS.filter(
+                    (suggested) =>
+                      !interests.some((i) => i.interest === suggested.toLowerCase())
+                  ).map((interest) => (
                     <Badge
-                      key={interest.id}
-                      variant="secondary"
-                      className="text-sm px-3 py-1.5 flex items-center gap-2"
+                      key={interest}
+                      variant="outline"
+                      className="text-xs px-2 py-1 cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
+                      onClick={() => handleQuickAddInterest(interest)}
                     >
-                      <Tag className="w-3 h-3" />
-                      {interest.interest}
-                      <button
-                        onClick={() => handleDeleteInterest(interest.id)}
-                        className="ml-1 hover:text-destructive transition-colors"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
+                      <Plus className="w-3 h-3 mr-1" />
+                      {interest}
                     </Badge>
                   ))}
                 </div>
+              </div>
+
+              {interests.length > 0 ? (
+                <div>
+                  <p className="text-sm font-medium mb-2">Your interests:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {interests.map((interest) => (
+                      <Badge
+                        key={interest.id}
+                        variant="secondary"
+                        className="text-sm px-3 py-1.5 flex items-center gap-2"
+                      >
+                        <Tag className="w-3 h-3" />
+                        {interest.interest}
+                        <button
+                          onClick={() => handleDeleteInterest(interest.id)}
+                          className="ml-1 hover:text-destructive transition-colors"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
               ) : (
                 <p className="text-center py-8 text-muted-foreground">
-                  No interests added yet. Add some to help others find common ground!
+                  No interests added yet. Click a suggestion or type your own!
                 </p>
               )}
             </CardContent>

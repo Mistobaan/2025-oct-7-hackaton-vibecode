@@ -177,6 +177,9 @@ export default function Dashboard() {
                     socials={socials}
                     onToggleSocial={handleToggleSocial}
                     size="medium"
+                    profileImage={profile?.avatar_url}
+                    displayName={profile?.display_name}
+                    showAsLeaves={true}
                   />
                 ) : (
                   <div className="text-center py-12">

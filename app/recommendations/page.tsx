@@ -118,11 +118,11 @@ export default function RecommendationsPage() {
 
         <div className="mb-8 text-center">
           <div className="flex items-center justify-center gap-2 mb-2">
-            <Sparkles className="w-8 h-8 text-primary" />
-            <h1 className="text-4xl font-bold">Recommendations</h1>
+            <Sparkles className="w-8 h-8 text-primary animate-pulse" />
+            <h1 className="text-4xl font-bold">AI Recommendations</h1>
           </div>
           <p className="text-muted-foreground">
-            Discover events and people that match your interests
+            Personalized suggestions based on your interests and activity
           </p>
         </div>
 

@@ -89,7 +89,7 @@ export async function getRecommendedEvents(
         .map(async (event) => {
           const eventInterests = event.interests || [];
           const matchingInterests = eventInterests.filter((interest: string) =>
-            interests.includes(interest.toLowerCase())
+            interests.some(userInt => userInt.toLowerCase() === interest.toLowerCase())
           );
           const matchScore = matchingInterests.length / Math.max(interests.length, 1);
 
@@ -156,7 +156,7 @@ export async function getRecommendedPeople(
         const theirInterestsList = theirInterests?.map((i) => i.interest) || [];
 
         const matchingInterests = theirInterestsList.filter((interest: string) =>
-          interests.includes(interest.toLowerCase())
+          interests.some(userInt => userInt.toLowerCase() === interest.toLowerCase())
         );
 
         const { data: theirEvents } = await supabase

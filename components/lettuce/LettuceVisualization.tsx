@@ -119,8 +119,14 @@ export function LettuceVisualization({
       </motion.div>
 
       {socials.map((social, index) => {
-        const startAngle = socials.length === 2 ? Math.PI * 0.65 : -Math.PI / 2;
-        const angle = (index / socials.length) * 2 * Math.PI + startAngle;
+        let angle;
+        if (socials.length === 2) {
+          // Position leaves symmetrically below profile (lower-left and lower-right)
+          angle = index === 0 ? Math.PI * 0.75 : Math.PI * 0.25;
+        } else {
+          // Distribute evenly around the circle
+          angle = (index / socials.length) * 2 * Math.PI - Math.PI / 2;
+        }
         const x = Math.cos(angle) * radius;
         const y = Math.sin(angle) * radius;
 

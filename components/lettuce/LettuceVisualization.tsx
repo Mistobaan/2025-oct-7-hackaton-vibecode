@@ -119,7 +119,8 @@ export function LettuceVisualization({
       </motion.div>
 
       {socials.map((social, index) => {
-        const angle = (index / socials.length) * 2 * Math.PI - Math.PI / 2;
+        const startAngle = socials.length === 2 ? Math.PI * 0.65 : -Math.PI / 2;
+        const angle = (index / socials.length) * 2 * Math.PI + startAngle;
         const x = Math.cos(angle) * radius;
         const y = Math.sin(angle) * radius;
 

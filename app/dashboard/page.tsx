@@ -8,7 +8,7 @@ import { LettuceVisualization } from '@/components/lettuce/LettuceVisualization'
 import { LoadingLettuce } from '@/components/ui/loading-lettuce';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Leaf, Plus, LogOut, User as UserIcon, Calendar, Clock, Trash2, Tag, Sparkles } from 'lucide-react';
+import { Leaf, Plus, LogOut, User as UserIcon, Calendar, Clock, Trash2, Tag } from 'lucide-react';
 import { signOut } from '@/lib/auth';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -177,9 +177,6 @@ export default function Dashboard() {
                     socials={socials}
                     onToggleSocial={handleToggleSocial}
                     size="medium"
-                    profileImage={profile?.avatar_url}
-                    displayName={profile?.display_name}
-                    showAsLeaves={true}
                   />
                 ) : (
                   <div className="text-center py-12">
@@ -200,14 +197,6 @@ export default function Dashboard() {
                 <CardDescription>Get started with LettuceConnect</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button
-                  className="w-full justify-start"
-                  variant="outline"
-                  onClick={() => router.push('/recommendations')}
-                >
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Recommendations
-                </Button>
                 <Button
                   className="w-full justify-start"
                   variant="outline"

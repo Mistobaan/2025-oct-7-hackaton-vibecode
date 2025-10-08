@@ -142,7 +142,7 @@ export function LettuceVisualization({
               key={social.id}
               className="absolute top-1/2 left-1/2 cursor-pointer"
               style={{
-                transformOrigin: 'center bottom',
+                transformOrigin: '50% 100%',
                 zIndex: isBehindProfile ? 0 : 2,
               }}
               initial={{ scale: 0, opacity: 0 }}
@@ -166,7 +166,7 @@ export function LettuceVisualization({
                 style={{
                   width: sizes.leafWidth,
                   height: sizes.leafHeight,
-                  transform: 'translate(-50%, -50%)',
+                  transform: 'translate(-50%, -100%)',
                 }}
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}

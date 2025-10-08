@@ -5,20 +5,17 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { supabase, SocialPlatform, Event } from '@/lib/supabase';
 import { LettuceVisualization } from '@/components/lettuce/LettuceVisualization';
-import { LoadingLettuce } from '@/components/ui/loading-lettuce';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Leaf, Plus, LogOut, User as UserIcon, Calendar, Clock, Trash2, Tag, Sparkles } from 'lucide-react';
+import { Leaf, Plus, LogOut, User as UserIcon } from 'lucide-react';
 import { signOut } from '@/lib/auth';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
 
 export default function Dashboard() {
   const { user, profile, loading } = useAuth();
   const router = useRouter();
   const [socials, setSocials] = useState<SocialPlatform[]>([]);
   const [currentEvent, setCurrentEvent] = useState<Event | null>(null);
-  const [createdEvents, setCreatedEvents] = useState<Event[]>([]);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -29,7 +26,6 @@ export default function Dashboard() {
   useEffect(() => {
     if (user) {
       loadSocials();
-      loadCreatedEvents();
     }
   }, [user]);
 
@@ -44,21 +40,6 @@ export default function Dashboard() {
       setSocials(data || []);
     } catch (error) {
       console.error('Error loading socials:', error);
-    }
-  };
-
-  const loadCreatedEvents = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('events')
-        .select('*')
-        .eq('created_by', user!.id)
-        .order('start_time', { ascending: false });
-
-      if (error) throw error;
-      setCreatedEvents(data || []);
-    } catch (error) {
-      console.error('Error loading created events:', error);
     }
   };
 
@@ -93,33 +74,10 @@ export default function Dashboard() {
     }
   };
 
-  const handleDeleteEvent = async (eventId: string, eventName: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-
-    if (!confirm(`Are you sure you want to delete "${eventName}"? This action cannot be undone.`)) {
-      return;
-    }
-
-    try {
-      const { error } = await supabase
-        .from('events')
-        .delete()
-        .eq('id', eventId);
-
-      if (error) throw error;
-
-      setCreatedEvents(createdEvents.filter(event => event.id !== eventId));
-      toast.success('Event deleted successfully');
-    } catch (error) {
-      console.error('Error deleting event:', error);
-      toast.error('Failed to delete event');
-    }
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <LoadingLettuce size="lg" />
+        <div className="animate-pulse text-primary text-2xl">Loading...</div>
       </div>
     );
   }
@@ -177,9 +135,6 @@ export default function Dashboard() {
                     socials={socials}
                     onToggleSocial={handleToggleSocial}
                     size="medium"
-                    profileImage={profile?.avatar_url}
-                    displayName={profile?.display_name}
-                    showAsLeaves={true}
                   />
                 ) : (
                   <div className="text-center py-12">
@@ -203,14 +158,6 @@ export default function Dashboard() {
                 <Button
                   className="w-full justify-start"
                   variant="outline"
-                  onClick={() => router.push('/recommendations')}
-                >
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Recommendations
-                </Button>
-                <Button
-                  className="w-full justify-start"
-                  variant="outline"
                   onClick={() => router.push('/event/join')}
                 >
                   Join Event
@@ -231,67 +178,9 @@ export default function Dashboard() {
                   <UserIcon className="w-4 h-4 mr-2" />
                   Manage Socials
                 </Button>
-                <Button
-                  className="w-full justify-start"
-                  variant="outline"
-                  onClick={() => router.push('/profile')}
-                >
-                  <Tag className="w-4 h-4 mr-2" />
-                  Manage Interests
-                </Button>
               </CardContent>
             </Card>
           </div>
-
-          {createdEvents.length > 0 && (
-            <Card className="mb-12">
-              <CardHeader>
-                <CardTitle>Your Events</CardTitle>
-                <CardDescription>Events you've created</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {createdEvents.map((event) => (
-                    <div
-                      key={event.id}
-                      className="flex items-center justify-between p-4 rounded-lg border border-border hover:border-primary transition-colors cursor-pointer"
-                      onClick={() => router.push(`/event/${event.id}`)}
-                    >
-                      <div className="flex-1">
-                        <h3 className="font-semibold">{event.name}</h3>
-                        <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <Calendar className="w-3 h-3" />
-                            {format(new Date(event.start_time), 'MMM d, yyyy')}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            {format(new Date(event.start_time), 'h:mm a')}
-                          </span>
-                          <code className="px-2 py-0.5 bg-primary/10 rounded text-xs font-mono">
-                            {event.party_code}
-                          </code>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="sm">
-                          View
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => handleDeleteEvent(event.id, event.name, e)}
-                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
 
           <Card>
             <CardHeader>

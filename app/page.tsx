@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthModal } from '@/components/auth/AuthModal';
-import { LoadingLettuce } from '@/components/ui/loading-lettuce';
 import { Button } from '@/components/ui/button';
 import { Leaf, Users, Zap, Shield } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -16,7 +15,7 @@ export default function Home() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <LoadingLettuce size="lg" />
+        <div className="animate-pulse text-primary text-2xl">Loading...</div>
       </div>
     );
   }

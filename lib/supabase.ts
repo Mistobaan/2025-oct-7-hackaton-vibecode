@@ -34,8 +34,6 @@ export type Event = {
   tier: 'free' | 'basic' | 'pro' | 'enterprise';
   is_active: boolean;
   created_at: string;
-  start_time: string;
-  end_time?: string;
   ends_at?: string;
 };
 
@@ -46,11 +44,4 @@ export type EventAttendee = {
   joined_at: string;
   is_online: boolean;
   last_seen: string;
-};
-
-export type UserInterest = {
-  id: string;
-  user_id: string;
-  interest: string;
-  created_at: string;
 };
